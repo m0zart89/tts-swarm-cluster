@@ -1,0 +1,7 @@
+project                      ="my-unique-project-id"
+region                       ="europe-west1"
+zone                         ="europe-west1-d"
+image_name                   ="ubuntu-1604-lts"
+ssh_user                     ="ubuntu"
+ssh_pub_key_file             ="~/.ssh/google_compute_engine.pub"
+swarm_workers                ="3"
