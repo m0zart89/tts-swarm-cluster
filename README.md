@@ -4,7 +4,7 @@
 
 1. git clone https://github.com/m0zart89/tts-swarm-cluster.git
 2. cd tts-swarm-cluster/terraform
-3. cp terraform.tfvars.example terraform.tfvars
+3. cp terraform.tfvars.example terraform.tfvars (also set your unique project id)
 4. terraform init
 5. terraform apply --auto-approve=true
 6. cd ../ansible
