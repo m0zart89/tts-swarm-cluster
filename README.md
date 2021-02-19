@@ -15,3 +15,7 @@
 
 From another host:
 1. sudo docker run -e AUTH_USER=admin -e AUTH_PASS=4ge7575 -e BACKEND=http://<any_worker_ip>:5002/api/tts -d -it -p 80:80 mozart89/tts-frontend
+
+To destroy cluster:
+1. cd ../terraform
+2. terraform destroy --auto-approve=true
