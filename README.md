@@ -10,7 +10,7 @@
 6. cd ../ansible
 7. ansible-playbook -i inventory main.yml
 8. ssh -i ~/.ssh/google_compute_engine -l ubuntu <manager_ip>
-9. sudo docker service create --replicas 3 --name tts-backend -p 5002:5002 --hostname tts-backend synesthesiam/mozillatts
+9. sudo docker service create --replicas 3 --name tts-backend -p 5002:5002 synesthesiam/mozillatts
 10. sudo docker service create --name=visualizer --publish=8080:8080/tcp --constraint=node.role==manager --mount=type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock dockersamples/visualizer
 
 From another host:
