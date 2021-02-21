@@ -1,6 +1,6 @@
 resource "google_compute_instance" "managers" {
   count        = var.swarm_managers
-  name         = "manager"
+  name         = "manager${count.index + 1}"
   machine_type = var.swarm_managers_instance_type
   zone         = var.zone
 

@@ -1,22 +1,55 @@
 ---
-- name: Install Python & Docker
-  hosts: managers:workers
-  gather_facts: False
-  roles:
-    - python
-    - docker
-
-- name: Init Swarm cluster
-  hosts: managers
-  gather_facts: False
-  roles:
-    - swarm-init
-
-- name: Join Swarm cluster
-  hosts: workers
+- hosts: all
   gather_facts: False
   vars:
-      token: "{{ hostvars[groups['managers'][0]]['worker_token']['stdout'] }}"
-      manager: "{{ hostvars[groups['managers'][0]]['inventory_hostname'] }}"
-  roles:
-    - swarm-join
+    docker_swarm_managers_ansible_group: 'managers'
+    docker_swarm_workers_ansible_group: 'workers'
+    docker_swarm_primary_manager: '{{ groups[docker_swarm_managers_ansible_group][0] }}'
+  tasks:
+    - name: install python
+      raw: 'apt-get -y install python'
+
+    - name: ensure repository key is installed
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: ensure docker registry is available
+      apt_repository: repo='deb https://download.docker.com/linux/ubuntu bionic stable' state=present
+
+    - name: ensure docker and dependencies are installed
+      apt: name=docker-ce update_cache=yes
+
+    - name: docker_swarm | Ensuring Docker Engine Is Running
+      service:
+        name: "docker"
+        state: "started"
+
+    - name: docker_swarm | Checking Swarm Mode Status
+      command: "docker info"
+      register: "docker_info"
+      changed_when: false
+
+    - name: docker_swarm | Init Docker Swarm Mode On First Manager
+      command: docker swarm init --advertise-addr {{ inventory_hostname }}
+      when: "'Swarm: inactive' in docker_info.stdout and inventory_hostname == docker_swarm_primary_manager"
+
+    - name: docker_swarm | Capturing Docker Swarm Manager join-token
+      command: "docker swarm join-token -q manager"
+      changed_when: false
+      register: "docker_swarm_manager_token"
+      when: inventory_hostname == docker_swarm_primary_manager
+
+    - name: docker_swarm | Capturing Docker Swarm Worker join-token
+      command: "docker swarm join-token -q worker"
+      changed_when: false
+      register: "docker_swarm_worker_token"
+      when: inventory_hostname == docker_swarm_primary_manager
+
+    - name: docker_swarm | Joining Docker Swarm Managers To Cluster
+      command: docker swarm join --advertise-addr {{ inventory_hostname }} --token {{ hostvars[docker_swarm_primary_manager]['docker_swarm_manager_token'].stdout }} {{ docker_swarm_primary_manager }}
+      when: 'inventory_hostname != docker_swarm_primary_manager and inventory_hostname in groups[docker_swarm_managers_ansible_group] and docker_info.stdout.find("Swarm: active") == -1 and docker_info.stdout.find("Swarm: pending") == -1'
+
+    - name: docker_swarm | Joining Docker Swarm Workers To Cluster
+      command: docker swarm join --advertise-addr {{ inventory_hostname }} --token {{ hostvars[docker_swarm_primary_manager]['docker_swarm_worker_token'].stdout }} {{ docker_swarm_primary_manager }}
+      when: 'inventory_hostname in groups[docker_swarm_workers_ansible_group] and docker_info.stdout.find("Swarm: active") == -1 and docker_info.stdout.find("Swarm: pending") == -1'
